@@ -43,14 +43,24 @@ RUN apt-get install -y sssd sssd-tools libpam-sss libnss-sss libnss-ldap
 ADD sssd.conf /etc/sssd/sssd.conf
 RUN chmod 0600 /etc/sssd/sssd.conf
 
-# Add custom script
-ADD custom.sh /usr/local/bin/custom.sh
-RUN chmod +x /usr/local/bin/custom.sh
 
 # Add supervisord and init
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 ADD init.sh /init.sh
 RUN chmod 755 /init.sh
+
+#
+RUN echo "hello!"
+
+# Parse usernames and passwords csv into user add script then execute it.
+ADD usernames_and_passwords.csv usernames_and_passwords.csv
+ADD write_user_insert_script.py write_user_insert_script.py
+RUN python write_user_insert_script.py --infile usernames_and_passwords.csv --outfile /usr/local/bin/custom.sh
+RUN chmod +x /usr/local/bin/custom.sh
+
+# Adding users needs the services running. custom.sh and init.sh do a little dance here to make that happen.
+RUN /init.sh app:setup_start
+
 EXPOSE 22 53 389 88 135 139 138 445 464 3268 3269
 ENTRYPOINT ["/init.sh"]
 CMD ["app:start"]

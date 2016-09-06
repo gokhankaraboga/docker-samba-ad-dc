@@ -19,8 +19,23 @@ username_password_file = open(args.infile, 'r')
 
 user_insert_script.write('#!/bin/bash\n')
 
+user_insert_script.write((
+    'if [ ! -a /usr/local/bin/ran_custom_sh_once ];\n'
+    'then\n'
+))
+
 for line in username_password_file:
     username, password = (entry.strip() for entry in line.split(','))
-    user_insert_script.write(
-        'samba-tool user add {0} {1}\n'.format(username, password)
-    )
+    user_insert_script.write((
+        '    echo "Running: samba-tool user add {0} {1}"\n'
+        '    samba-tool user add {0} {1}\n'.format(username, password)
+    ))
+
+user_insert_script.write((
+    '    touch /usr/local/bin/ran_custom_sh_once\n'
+    '    echo "killing services"\n'
+    '    kill `pgrep supervisord`\n'
+    'else\n'
+    '    echo "Already ran once (/usr/local/bin/ran_custom_sh_once exists)"\n'
+    'fi\n'
+))
