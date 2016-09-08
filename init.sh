@@ -10,16 +10,15 @@ if [[ $SAMBA_HOST_IP ]]; then
     SAMBA_HOST_IP="--host-ip=${SAMBA_HOST_IP}"
 fi
 
-SAMBA_CONF_BACKUP=/var/lib/samba/private/smb.conf
-SSSD_CONF_BACKUP=/var/lib/samba/private/sssd.conf
-KRBKEYTAP_CONF_BACKUP=/var/lib/samba/private/krb5.keytab
+SAMBA_CONF_BACKUP=/smb.conf
+KRBKEYTAP_CONF_BACKUP=/krb5.keytab
 
 appSetup () {
     echo "Initializing samba database..."
-    
+
     # Generate passwords or re-use them from the environment
-    ROOT_PASSWORD=${ROOT_PASSWORD:-$(pwgen -c -n -1 12)}
-    SAMBA_ADMIN_PASSWORD=${SAMBA_ADMIN_PASSWORD:-$(pwgen -cny 10 1)}
+    ROOT_PASSWORD=${ROOT_PASSWORD:-Member22%}
+    SAMBA_ADMIN_PASSWORD=${SAMBA_ADMIN_PASSWORD:-Member22%}
     export KERBEROS_PASSWORD=${KERBEROS_PASSWORD:-$(pwgen -cny 10 1)}
     echo "root:$ROOT_PASSWORD" | chpasswd
     echo Root password: $ROOT_PASSWORD
@@ -28,7 +27,7 @@ appSetup () {
 
     # Provision Samba
     rm -f /etc/samba/smb.conf
-    rm -rf /var/lib/samba/private/*
+    rm -rf /var/lib/samba/private/
     samba-tool domain provision --use-rfc2307 --domain=$SAMBA_DOMAIN --realm=$SAMBA_REALM --server-role=dc\
       --dns-backend=BIND9_DLZ --adminpass=$SAMBA_ADMIN_PASSWORD $SAMBA_HOST_IP
     cp /var/lib/samba/private/krb5.conf /etc/krb5.conf
@@ -40,25 +39,23 @@ appSetup () {
 	fi
     # Create Kerberos database
     expect kdb5_util_create.expect
-    
+
     # Export kerberos keytab for use with sssd
     if [ "${OMIT_EXPORT_KEY_TAB}" != "true" ]
     then
         samba-tool domain exportkeytab /etc/krb5.keytab --principal ${HOSTNAME}\$
         cp /etc/krb5.keytab $KRBKEYTAP_CONF_BACKUP
     fi
-    sed -i "s/SAMBA_REALM/${SAMBA_REALM}/" /etc/sssd/sssd.conf
-    
+
     cp /etc/samba/smb.conf $SAMBA_CONF_BACKUP
-    cp /etc/sssd/sssd.conf $SSSD_CONF_BACKUP
 }
 
 appStart () {
     if [ -f $SAMBA_CONF_BACKUP ]
-    then 
-        echo "Skipping setup and restore configurations..."
+    then
+        echo "Skipping setup and restoring configurations..."
         cp $SAMBA_CONF_BACKUP /etc/samba/smb.conf
-        cp $SSSD_CONF_BACKUP /etc/sssd/sssd.conf
+        # cp -r /samba_bkp/* /var/lib/samba/
         [ -f $KRBKEYTAP_CONF_BACKUP ] && cp $KRBKEYTAP_CONF_BACKUP /etc/krb5.keytab
     else
         appSetup
