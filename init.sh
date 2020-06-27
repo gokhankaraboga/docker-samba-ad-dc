@@ -10,8 +10,9 @@ if [[ $SAMBA_HOST_IP ]]; then
     SAMBA_HOST_IP="--host-ip=${SAMBA_HOST_IP}"
 fi
 
-SAMBA_CONF_BACKUP=/smb.conf
-KRBKEYTAP_CONF_BACKUP=/krb5.keytab
+SAMBA_CONF_BACKUP=/conf/smb.conf
+KRB_CONF_BACKUP=/conf/krb5.conf
+KRBKEYTAP_CONF_BACKUP=/conf/krb5.keytab
 
 appSetup () {
     echo "Initializing samba database..."
@@ -28,9 +29,10 @@ appSetup () {
     # Provision Samba
     rm -f /etc/samba/smb.conf
     rm -rf /var/lib/samba/private/
-    samba-tool domain provision --use-rfc2307 --domain=$SAMBA_DOMAIN --realm=$SAMBA_REALM --server-role=dc\
+    samba-tool domain provision --use-rfc2307 --use-ntvfs --domain=$SAMBA_DOMAIN --realm=$SAMBA_REALM --server-role=dc\
       --dns-backend=BIND9_DLZ --adminpass=$SAMBA_ADMIN_PASSWORD $SAMBA_HOST_IP
     cp /var/lib/samba/private/krb5.conf /etc/krb5.conf
+    cp /etc/krb5.conf $KRB_CONF_BACKUP
     if [ "${LDAP_ALLOW_INSECURE,,}" == "true" ]; then
 	  sed -i "/\[global\]/a \
 	    \\\t\# enable unencrypted passwords\n\
@@ -57,6 +59,7 @@ appStart () {
         cp $SAMBA_CONF_BACKUP /etc/samba/smb.conf
         # cp -r /samba_bkp/* /var/lib/samba/
         [ -f $KRBKEYTAP_CONF_BACKUP ] && cp $KRBKEYTAP_CONF_BACKUP /etc/krb5.keytab
+        [ -f $KRB_CONF_BACKUP ] && cp $KRB_CONF_BACKUP /etc/krb5.conf
     else
         appSetup
     fi
