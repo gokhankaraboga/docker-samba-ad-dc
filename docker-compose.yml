@@ -1,0 +1,26 @@
+version: '3.1'
+services:
+  samba:
+    build: .
+    environment:
+      - SAMBA_DOMAIN=${SAMBA_DOMAIN}
+      - SAMBA_REALM=${SAMBA_REALM}
+      - SAMBA_ADMIN_PASSWORD=${SAMBA_ADMIN_PASSWORD}
+      - LDAP_ALLOW_INSECURE=true
+    volumes:
+      - ${DATA_PATH}/conf:/conf
+      - ${DATA_PATH}/krb5kdc:/etc/krb5kdc
+      - ${DATA_PATH}/samba:/var/lib/samba
+    ports:
+      - "22:22"
+      - "53:53"
+      - "389:389"
+      - "636:636"
+      - "88:88"
+      - "135:135"
+      - "139:139"
+      - "138:138"
+      - "445:445"
+      - "464:464"
+      - "3268:3268"
+      - "3269:3269"
