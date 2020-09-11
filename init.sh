@@ -31,6 +31,7 @@ appSetup () {
     rm -rf /var/lib/samba/private/
     samba-tool domain provision --use-rfc2307 --use-ntvfs --domain=$SAMBA_DOMAIN --realm=$SAMBA_REALM --server-role=dc\
       --dns-backend=BIND9_DLZ --adminpass=$SAMBA_ADMIN_PASSWORD $SAMBA_HOST_IP
+    samba-tool user setexpiry Administrator --noexpiry
     cp /var/lib/samba/private/krb5.conf /etc/krb5.conf
     cp /etc/krb5.conf $KRB_CONF_BACKUP
     if [ "${LDAP_ALLOW_INSECURE,,}" == "true" ]; then

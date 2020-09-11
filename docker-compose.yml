@@ -2,6 +2,7 @@ version: '3.1'
 services:
   samba:
     build: .
+    image: samba-ad-dc:latest
     environment:
       - SAMBA_DOMAIN=${SAMBA_DOMAIN}
       - SAMBA_REALM=${SAMBA_REALM}
